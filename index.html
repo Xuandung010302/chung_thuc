@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phần Mềm Điền Lời Chứng Thực</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-hover: #3a56d4;
+            --bg-body: #0f172a;
+            --bg-form: rgba(30, 41, 59, 0.7);
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --input-bg: rgba(15, 23, 42, 0.8);
+            --paper: #ffffff;
+            --paper-text: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-body);
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .form-panel {
+            width: 400px;
+            padding: 30px;
+            background: var(--bg-form);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            position: relative;
+            z-index: 10;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .preview-panel {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: #cbd5e1; /* Subtle contrast behind paper */
+        }
+
+        /* Typography & Form Elements */
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: var(--input-bg);
+            color: var(--text-light);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .col-4 { flex: 0 0 33%; }
+        .col-8 { flex: 1; }
+
+        .btn-print {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--primary);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-print:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.5);
+        }
+
+        .btn-print:active {
+            transform: translateY(0);
+        }
+
+        .switch-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .switch-label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        /* Toggle Button */
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Paper Document Styles */
+        .a4-paper, .a4-paper * {
+            font-family: 'Times New Roman', Times, serif !important;
+        }
+
+        .a4-paper {
+            width: 210mm;
+            height: 297mm;
+            background: var(--paper);
+            color: var(--paper-text);
+            padding: 20mm 15mm 20mm 20mm; /* A4 margins: Top 20, Right 15, Bottom 20, Left 20 */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            font-size: 14pt;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .doc-header {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 30px;
+            line-height: 1.2;
+        }
+
+        .doc-indent {
+            text-indent: 12.5mm;
+            text-align: justify;
+            margin-bottom: 6px;
+        }
+
+        .text-red {
+            color: red;
+        }
+
+        .text-black-print {
+            color: red; /* Defaults to red on screen */
+        }
+
+        /* In print, black color unless toggle is checked */
+        .print-red-text .text-black-print {
+            color: red !important;
+        }
+
+        .print-black-text .text-black-print {
+            color: black !important;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+        
+        .italic {
+            font-style: italic;
+        }
+
+        .doc-footer {
+            display: flex;
+            margin-top: 30px;
+            justify-content: space-between;
+        }
+
+        .doc-footer .col {
+            flex: 1;
+            text-align: center;
+        }
+
+        /* Print Specific Styles */
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            .form-panel {
+                display: none;
+            }
+            .preview-panel {
+                padding: 0;
+                margin: 0;
+                background: none;
+                justify-content: flex-start;
+                align-items: flex-start;
+                display: block;
+            }
+            .a4-paper {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                height: 100%;
+                page-break-after: always;
+            }
+            @page {
+                size: A4;
+                margin: 0; 
+            }
+        }
+        
+    </style>
+</head>
+<body class="print-black-text">
+
+    <div class="container">
+        <!-- Form Panel -->
+        <div class="form-panel">
+            <h1>Nhập Liệu Chứng Thực</h1>
+            
+            <div class="form-group">
+                <label>Ngày chứng thực</label>
+                <input type="date" id="input-date" value="2026-03-31">
+            </div>
+
+            <div class="row">
+                <div class="form-group col-4">
+                    <label>Danh xưng</label>
+                    <select id="input-honorific">
+                        <option value="Ông">Ông</option>
+                        <option value="Bà" selected>Bà</option>
+                    </select>
+                </div>
+                <div class="form-group col-8">
+                    <label>Họ và tên</label>
+                    <input type="text" id="input-name" value="HỒ THỊ VƠN" placeholder="Nhập họ và tên...">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Ngày sinh (dd/mm/yyyy)</label>
+                <input type="text" id="input-dob" value="14/11/2003" placeholder="VD: 14/11/2003">
+            </div>
+
+            <div class="form-group">
+                <label>Số CCCD</label>
+                <input type="text" id="input-cccd" value="045303004832" placeholder="Nhập số CCCD...">
+            </div>
+
+            <div class="form-group">
+                <label>Ngày cấp (dd/mm/yyyy)</label>
+                <input type="text" id="input-issueDate" value="13/06/2023" placeholder="VD: 13/06/2023">
+            </div>
+
+            <div class="switch-group">
+                <p class="switch-label">In chữ màu đỏ (giữ nguyên gốc)</p>
+                <label class="toggle">
+                    <input type="checkbox" id="toggle-color">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <button class="btn-print" onclick="window.print()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                In Tài Liệu
+            </button>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-panel">
+            <div class="a4-paper">
+                <div class="doc-header">
+                    Lời chứng chứng thực chữ ký của một người trong một giấy tờ, văn bản tại<br>
+                    Trung tâm Phục vụ hành chính công tại xã Hướng Hiệp
+                </div>
+                
+                <div class="doc-indent">
+                    Ngày <span id="out-day">31</span> tháng <span id="out-month">03</span> năm <span id="out-year">2026</span> 
+                    <span class="italic">(Bằng chữ: Ngày <span id="out-dayWords">ba mươi mốt</span>, tháng <span id="out-monthWords">ba</span>, năm <span id="out-yearWords">hai nghìn không trăm hai mươi sáu</span>)</span>
+                </div>
+                
+                <div class="doc-indent">
+                    Tại: Trung tâm phục vụ hành chính công xã Hướng Hiệp, tỉnh Quảng Trị.
+                </div>
+                
+                <div class="doc-indent">
+                    Tôi: Thái Thị Thanh Huyền - Phó Giám đốc Trung tâm phục vụ hành chính công xã Hướng Hiệp, tỉnh Quảng Trị.
+                </div>
+                
+                <div class="doc-indent">
+                    Chứng thực:
+                </div>
+                
+                <div class="doc-indent text-black-print">
+                    <span id="out-honorific" class="uppercase">BÀ</span>: <span id="out-name" class="uppercase">HỒ THỊ VƠN</span> ; Sinh ngày : <span id="out-dob">14/11/2003</span>.
+                </div>
+                
+                <div class="doc-indent">
+                    CCCD số: <span id="out-cccd" class="text-black-print">045303004832</span> ; Do Cục CSQLHC về TTXH cấp ngày&nbsp;<span id="out-issueDate" class="text-black-print">13/06/2023</span>.
+                </div>
+                
+                <div class="doc-indent">
+                    Cam đoan đã hiểu, tự chịu trách nhiệm về nội dung của giấy tờ, văn bản và đã ký vào giấy tờ, văn bản này trước mặt bà: Trần Thị Lịch là người tiếp nhận hồ sơ.
+                </div>
+                
+                <div class="doc-indent">
+                    Số chứng thực:.....Quyển số: 01/2026 - SCT/CK, ĐC
+                </div>
+
+                <div class="doc-footer">
+                    <div class="col bold" style="display: flex; flex-direction: column; justify-content: space-between; height: 160px;">
+                        <div>Người tiếp nhận hồ sơ</div>
+                        <div>Trần Thị Lịch</div>
+                    </div>
+                    <div class="col bold" style="display: flex; flex-direction: column; justify-content: space-between; height: 160px;">
+                        <div>Người thực hiện chứng thực ký<br>Phó Giám đốc</div>
+                        <div>Thái Thị Thanh Huyền</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Number to words mapping (simplified for dates)
+        const unitWords = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+        
+        function convertTwoDigits(num) {
+            if (num < 10) return unitWords[num];
+            if (num === 10) return "mười";
+            
+            let tens = Math.floor(num / 10);
+            let units = num % 10;
+            
+            let res = "";
+            if (tens === 1) res = "mười ";
+            else res = unitWords[tens] + " mươi ";
+            
+            if (units === 1 && tens > 1) res += "mốt";
+            else if (units === 4 && tens >= 1) res += "tư"; /* Optional for 14 but keep 4 as bốn/tư */
+            else if (units === 5 && tens >= 1) res += "lăm";
+            else if (units > 0) res += unitWords[units];
+            
+            return res.trim();
+        }
+
+        function convertYear(year) {
+            let thousands = Math.floor(year / 1000);
+            let hundreds = Math.floor((year % 1000) / 100);
+            let tens = Math.floor((year % 100) / 10);
+            let units = year % 10;
+            
+            let res = "";
+            if (thousands > 0) res += unitWords[thousands] + " nghìn ";
+            res += unitWords[hundreds] + " trăm ";
+            
+            if (tens === 0 && units > 0) res += "lẻ ";
+            else if (tens > 0) {
+                if (tens === 1) res += "mười ";
+                else res += unitWords[tens] + " mươi ";
+            }
+            
+            if (units === 1 && tens > 1) res += "mốt";
+            else if (units === 5 && tens > 0) res += "lăm";
+            else if (units > 0) res += unitWords[units];
+            
+            return res.trim();
+        }
+
+        // Live Binding
+        const bindInput = (inputId, outputId) => {
+            const el = document.getElementById(inputId);
+            const out = document.getElementById(outputId);
+            el.addEventListener('input', () => {
+                out.textContent = el.value || '...';
+            });
+        };
+
+        bindInput('input-name', 'out-name');
+        bindInput('input-honorific', 'out-honorific');
+        bindInput('input-dob', 'out-dob');
+        bindInput('input-cccd', 'out-cccd');
+        bindInput('input-issueDate', 'out-issueDate');
+
+        // Date Handling
+        const dateInput = document.getElementById('input-date');
+        
+        // Default to today
+        const today = new Date();
+        const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        dateInput.value = localDate;
+        
+        const updateDate = () => {
+            if (!dateInput.value) return;
+            const d = new Date(dateInput.value);
+            const day = d.getDate();
+            const month = d.getMonth() + 1;
+            const year = d.getFullYear();
+            
+            document.getElementById('out-day').textContent = day < 10 ? '0' + day : day;
+            document.getElementById('out-month').textContent = month < 10 ? '0' + month : month;
+            document.getElementById('out-year').textContent = year;
+            
+            document.getElementById('out-dayWords').textContent = convertTwoDigits(day);
+            document.getElementById('out-monthWords').textContent = convertTwoDigits(month);
+            document.getElementById('out-yearWords').textContent = convertYear(year);
+        };
+        
+        dateInput.addEventListener('change', updateDate);
+        updateDate(); // Init
+
+        // Toggle Color Print
+        const toggleColor = document.getElementById('toggle-color');
+        const bodyTag = document.body;
+        
+        toggleColor.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                bodyTag.classList.remove('print-black-text');
+                bodyTag.classList.add('print-red-text');
+            } else {
+                bodyTag.classList.remove('print-red-text');
+                bodyTag.classList.add('print-black-text');
+            }
+        });
+        
+    </script>
+</body>
+</html>
